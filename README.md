@@ -17,6 +17,7 @@ A python-based command line utility for controlling
 	> ./switchmate EE:0D:EB:E4:3F:0D 4723210F switch off
 	Waiting for response
 	Switched!
-	
+
+*Note:* You cannot use this script and the Switchmate app simultaneously.
 
 Based on code from [scottjg/switchmate](https://github.com/scottjg/switchmate).
