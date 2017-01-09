@@ -1,9 +1,12 @@
 #! /usr/bin/env python
-"""switchmate
+"""switchmate.py
+
+A python-based command line utility for controlling Switchmate switches
 
 Usage:
-	switcmate.py auth <mac_address>
-	switcmate.py switch <mac_address> <auth_key> [on | off]
+	./switchmate.py auth <mac_address>
+	./switchmate.py switch <mac_address> <auth_key> [on | off]
+	./switchmate.py -h | --help
 """
 import struct
 import sys
