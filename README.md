@@ -2,7 +2,7 @@
 A python-based command line utility for controlling 
 [Switchmate](https://github.com/scottjg/switchmate) switches.
 
-## usage
+## Usage
 
 	switcmate.py auth <mac_address>
 	switcmate.py switch <mac_address> <auth_key> [on | off]
