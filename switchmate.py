@@ -4,10 +4,11 @@
 A python-based command line utility for controlling Switchmate switches
 
 Usage:
-	./switchmate.py auth <mac_address>
-	./switchmate.py switch <mac_address> <auth_key> [on | off]
+	./switchmate.py <mac_address> auth
+	./switchmate.py <mac_address> <auth_key> switch [on | off]
 	./switchmate.py -h | --help
 """
+from __future__ import print_function
 import struct
 import sys
 import ctypes
@@ -53,9 +54,11 @@ class NotificationDelegate(DefaultDelegate):
 		DefaultDelegate.__init__(self)
 
 	def handleNotification(self, handle, data):
-		print('response {} {}'.format(handle, hexlify(data)))
+		print('')
 		if handle == AUTH_HANDLE:
-			print('got auth key {}'.format(hexlify(data[3:])))
+			print('Auth key is {}'.format(hexlify(data[3:]).upper()))
+		else:
+			print('Switched!')
 		device.disconnect()
 		sys.exit()
 
@@ -77,9 +80,10 @@ if __name__ == '__main__':
 	else: 
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
-		print('press button to auth')
+		print('Press button on Switcmate to get auth key')
 
-	print('waiting for notifications')
+	print('Waiting for response', end='')
 	while True:
 		device.waitForNotifications(1.0)
-		print('waiting')
+		print('.', end='')
+		sys.stdout.flush()
