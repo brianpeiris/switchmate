@@ -18,6 +18,6 @@ A python-based command line utility for controlling
 	Waiting for response
 	Switched!
 
-*Note:* You cannot use this script and the Switchmate app simultaneously.
+**Note:** You cannot use this script and the Switchmate app simultaneously.
 
 Based on code from [scottjg/switchmate](https://github.com/scottjg/switchmate).
