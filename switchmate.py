@@ -1,20 +1,23 @@
 #! /usr/bin/env python
+
 """switchmate.py
 
 A python-based command line utility for controlling Switchmate switches
 
 Usage:
+	./switchmate.py scan
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> <auth_key> switch [on | off]
 	./switchmate.py -h | --help
 """
+
 from __future__ import print_function
 import struct
 import sys
 import ctypes
 
 from docopt import docopt
-from bluepy.btle import DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
+from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
 from binascii import hexlify, unhexlify
 
 NOTIFY_VALUE = struct.pack('<BB', 0x01, 0x00)
@@ -62,8 +65,37 @@ class NotificationDelegate(DefaultDelegate):
 		device.disconnect()
 		sys.exit()
 
+def scan():
+	print('Scanning...')
+	sys.stdout.flush()
+
+	scanner = Scanner()
+	devices = scanner.scan(10.0)
+
+	SERVICES_AD_TYPE = 7
+	SWITCHMATE_SERVICE = '23d1bcea5f782315deef121223150000'
+
+	switchmates = []
+	for dev in devices:
+		for (adtype, desc, value) in dev.getScanData():
+			is_switchmate = adtype == SERVICES_AD_TYPE and value == SWITCHMATE_SERVICE
+			if is_switchmate and dev not in switchmates:
+				switchmates.append(dev)
+
+	if len(switchmates):
+		print('Found Switchmates:')
+		for switchmate in switchmates:
+			print(switchmate.addr)
+	else:
+		print('No Switchmate devices found');
+
 if __name__ == '__main__':
 	arguments = docopt(__doc__)
+
+	if arguments['scan']:
+		scan()
+		sys.exit()
+
 	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
 
 	notifications = NotificationDelegate()

@@ -4,17 +4,27 @@ A python-based command line utility for controlling
 
 ## Usage
 
+	./switchmate.py scan
 	./switchmate.py auth <mac_address>
 	./switchmate.py switch <mac_address> <auth_key> [on | off]
 
-	> ./switchmate EE:0D:EB:E4:3F:0D auth
+	$ sudo ./switchmate.py scan
+	Scanning...
+	Found Switchmates:
+	ee:0d:eb:e4:3f:0d
+	e4:ee:fc:66:48:aa
+	c9:5e:b2:60:37:01
+
+	$ ./switchmate.py ee:0d:eb:e4:3f:0d auth
 	Press button on Switchmate to get auth key
 	Waiting for response...
 	Auth key is 4723210F
-	> ./switchmate EE:0D:EB:E4:3F:0D 4723210F switch on
+
+	$ ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch on
 	Waiting for response
 	Switched!
-	> ./switchmate EE:0D:EB:E4:3F:0D 4723210F switch off
+
+	$ ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch off
 	Waiting for response
 	Switched!
 
