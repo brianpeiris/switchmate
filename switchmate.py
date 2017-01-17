@@ -109,7 +109,7 @@ if __name__ == '__main__':
 		else:
 			val = '\x00'
 		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
-	else: 
+	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
 		print('Press button on Switchmate to get auth key')
