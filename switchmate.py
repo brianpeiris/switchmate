@@ -11,7 +11,7 @@ Usage:
 	./switchmate.py -h | --help
 """
 
-from __future__ import print_function
+#from __future__ import print_function
 import struct
 import sys
 import ctypes
@@ -114,8 +114,8 @@ if __name__ == '__main__':
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
 		print('Press button on Switchmate to get auth key')
 
-	print('Waiting for response', end='')
+	print('Waiting for response')
 	while True:
 		device.waitForNotifications(1.0)
-		print('.', end='')
+		print('.')
 		sys.stdout.flush()
