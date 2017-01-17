@@ -112,7 +112,7 @@ if __name__ == '__main__':
 	else: 
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
-		print('Press button on Switcmate to get auth key')
+		print('Press button on Switchmate to get auth key')
 
 	print('Waiting for response', end='')
 	while True:
