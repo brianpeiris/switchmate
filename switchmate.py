@@ -6,6 +6,7 @@ A python-based command line utility for controlling Switchmate switches
 
 Usage:
 	./switchmate.py scan
+	./switchmate.py status
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> <auth_key> switch [on | off]
 	./switchmate.py -h | --help
@@ -15,6 +16,8 @@ Usage:
 import struct
 import sys
 import ctypes
+
+from time import time
 
 from docopt import docopt
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
@@ -65,6 +68,32 @@ class NotificationDelegate(DefaultDelegate):
 		device.disconnect()
 		sys.exit()
 
+class ScanDelegate(DefaultDelegate):
+	def __init__(self):
+		DefaultDelegate.__init__(self)
+
+	def handleDiscovery(self, dev, isNewDev, isNewData):
+		AD_TYPE_UUID = 0x07
+		SWITCHMATE_UUID = '23d1bcea5f782315deef121223150000'
+
+		AD_TYPE_SERVICE_DATA = 0x16
+
+		if (dev.getValueText(AD_TYPE_UUID) == SWITCHMATE_UUID):
+			data = dev.getValueText(AD_TYPE_SERVICE_DATA)
+			# the bit at 0x0100 signifies if the switch is off or on
+			print time(), ("off", "on")[(int(data, 16) >> 8) & 1]
+
+def status():
+	print('Looking for switchmate status...')
+	sys.stdout.flush()
+
+	scanner = Scanner().withDelegate(ScanDelegate())
+
+	scanner.clear()
+	scanner.start()
+	scanner.process(30.0)
+	scanner.stop()
+
 def scan():
 	print('Scanning...')
 	sys.stdout.flush()
@@ -94,6 +123,10 @@ if __name__ == '__main__':
 
 	if arguments['scan']:
 		scan()
+		sys.exit()
+
+	if arguments['status']:
+		status()
 		sys.exit()
 
 	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
