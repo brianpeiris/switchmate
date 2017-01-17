@@ -58,12 +58,17 @@ class NotificationDelegate(DefaultDelegate):
 
 	def handleNotification(self, handle, data):
 		print('')
+		succeeded = True
 		if handle == AUTH_HANDLE:
 			print('Auth key is {}'.format(hexlify(data[3:]).upper()))
 		else:
-			print('Switched!')
+			if ord(data[-1]) == 0:
+				print('Switched!')
+			else:
+				print('Switching failed!')
+				succeeded = False
 		device.disconnect()
-		sys.exit()
+		sys.exit(0 if succeeded else 1)
 
 def scan():
 	print('Scanning...')
@@ -109,7 +114,7 @@ if __name__ == '__main__':
 		else:
 			val = '\x00'
 		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
-	else: 
+	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
 		print('Press button on Switcmate to get auth key')
