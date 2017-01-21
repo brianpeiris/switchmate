@@ -6,15 +6,18 @@ A python-based command line utility for controlling Switchmate switches
 
 Usage:
 	./switchmate.py scan
+	./switchmate.py status
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> <auth_key> switch [on | off]
 	./switchmate.py -h | --help
 """
 
-from __future__ import print_function
+#from __future__ import print_function
 import struct
 import sys
 import ctypes
+
+from time import time
 
 from docopt import docopt
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
@@ -70,6 +73,32 @@ class NotificationDelegate(DefaultDelegate):
 		device.disconnect()
 		sys.exit(0 if succeeded else 1)
 
+class ScanDelegate(DefaultDelegate):
+	def __init__(self):
+		DefaultDelegate.__init__(self)
+
+	def handleDiscovery(self, dev, isNewDev, isNewData):
+		AD_TYPE_UUID = 0x07
+		SWITCHMATE_UUID = '23d1bcea5f782315deef121223150000'
+
+		AD_TYPE_SERVICE_DATA = 0x16
+
+		if (dev.getValueText(AD_TYPE_UUID) == SWITCHMATE_UUID):
+			data = dev.getValueText(AD_TYPE_SERVICE_DATA)
+			# the bit at 0x0100 signifies if the switch is off or on
+			print time(), ("off", "on")[(int(data, 16) >> 8) & 1]
+
+def status():
+	print('Looking for switchmate status...')
+	sys.stdout.flush()
+
+	scanner = Scanner().withDelegate(ScanDelegate())
+
+	scanner.clear()
+	scanner.start()
+	scanner.process(30.0)
+	scanner.stop()
+
 def scan():
 	print('Scanning...')
 	sys.stdout.flush()
@@ -101,6 +130,10 @@ if __name__ == '__main__':
 		scan()
 		sys.exit()
 
+	if arguments['status']:
+		status()
+		sys.exit()
+
 	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
 
 	notifications = NotificationDelegate()
@@ -117,10 +150,10 @@ if __name__ == '__main__':
 	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
-		print('Press button on Switcmate to get auth key')
+		print('Press button on Switchmate to get auth key')
 
-	print('Waiting for response', end='')
+	print('Waiting for response')
 	while True:
 		device.waitForNotifications(1.0)
-		print('.', end='')
+		print('.')
 		sys.stdout.flush()
