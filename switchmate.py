@@ -6,6 +6,7 @@ A python-based command line utility for controlling Switchmate switches
 
 Usage:
 	./switchmate.py scan
+	./switchmate.py status [<mac_address>]
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> <auth_key> switch [on | off]
 	./switchmate.py -h | --help
@@ -16,10 +17,13 @@ import struct
 import sys
 import ctypes
 
+from time import time
+
 from docopt import docopt
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
 from binascii import hexlify, unhexlify
 
+SWITCHMATE_SERVICE = '23d1bcea5f782315deef121223150000'
 NOTIFY_VALUE = struct.pack('<BB', 0x01, 0x00)
 
 AUTH_NOTIFY_HANDLE = 0x0017
@@ -70,6 +74,40 @@ class NotificationDelegate(DefaultDelegate):
 		device.disconnect()
 		sys.exit(0 if succeeded else 1)
 
+class ScanDelegate(DefaultDelegate):
+	def __init__(self, mac_address):
+		DefaultDelegate.__init__(self)
+		self.mac_address = mac_address
+		self.seen = []
+
+	def handleDiscovery(self, dev, isNewDev, isNewData):
+		if self.mac_address != None and self.mac_address != dev.addr:
+			return
+
+		if dev.addr in self.seen:
+			return
+		self.seen.append(dev.addr)
+
+		AD_TYPE_UUID = 0x07
+		AD_TYPE_SERVICE_DATA = 0x16
+		if dev.getValueText(AD_TYPE_UUID) == SWITCHMATE_SERVICE:
+			data = dev.getValueText(AD_TYPE_SERVICE_DATA)
+			# the bit at 0x0100 signifies if the switch is off or on
+			print(dev.addr + ' ' + ("off", "on")[(int(data, 16) >> 8) & 1])
+			if self.mac_address != None:
+				sys.exit()
+
+def status(mac_address):
+	print('Looking for switchmate status...')
+	sys.stdout.flush()
+
+	scanner = Scanner().withDelegate(ScanDelegate(mac_address))
+
+	scanner.clear()
+	scanner.start()
+	scanner.process(20)
+	scanner.stop()
+
 def scan():
 	print('Scanning...')
 	sys.stdout.flush()
@@ -78,7 +116,6 @@ def scan():
 	devices = scanner.scan(10.0)
 
 	SERVICES_AD_TYPE = 7
-	SWITCHMATE_SERVICE = '23d1bcea5f782315deef121223150000'
 
 	switchmates = []
 	for dev in devices:
@@ -101,6 +138,10 @@ if __name__ == '__main__':
 		scan()
 		sys.exit()
 
+	if arguments['status']:
+		status(arguments['<mac_address>'])
+		sys.exit()
+
 	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
 
 	notifications = NotificationDelegate()
@@ -117,7 +158,7 @@ if __name__ == '__main__':
 	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
-		print('Press button on Switcmate to get auth key')
+		print('Press button on Switchmate to get auth key')
 
 	print('Waiting for response', end='')
 	while True:
