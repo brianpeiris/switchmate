@@ -17,8 +17,6 @@ import struct
 import sys
 import ctypes
 
-from time import time
-
 from docopt import docopt
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
 from binascii import hexlify, unhexlify
