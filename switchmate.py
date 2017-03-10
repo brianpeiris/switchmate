@@ -35,22 +35,22 @@ def c_mul(a, b):
 	'''
 	Multiplication function with overflow
 	'''
-	return ctypes.c_int64((long(a) * b) &0xffffffffffffffff).value
+	return ctypes.c_int64((a * b) &0xffffffffffffffff).value
 
 def sign(data, key):
 	'''
 	Variant of the Fowler-Noll-Vo (FNV) hash function
 	'''
 	blob = data + key
-	x = ord(blob[0]) << 7
+	x = blob[0] << 7
 	for c in blob:
 		x1 = c_mul(1000003, x)
-		x = x1 ^ ord(c) ^ len(blob)
+		x = x1 ^ c ^ len(blob)
 
 	# once we have the hash, we append the data
 	shifted_hash = (x & 0xffffffff) << 16
-	shifted_data_0 = ord(data[0]) << 48
-	shifted_data_1 = ord(data[1]) << 56
+	shifted_data_0 = data[0] << 48
+	shifted_data_1 = data[1] << 56
 	packed = struct.pack('<Q', shifted_hash | shifted_data_0 | shifted_data_1)[2:]
 	return packed
 
@@ -64,7 +64,7 @@ class NotificationDelegate(DefaultDelegate):
 		if handle == AUTH_HANDLE:
 			print('Auth key is {}'.format(hexlify(data[3:]).upper()))
 		else:
-			if ord(data[-1]) == 0:
+			if data[-1] == 0:
 				print('Switched!')
 			else:
 				print('Switching failed!')
@@ -149,10 +149,10 @@ if __name__ == '__main__':
 		auth_key = unhexlify(arguments['<auth_key>'])
 		device.writeCharacteristic(STATE_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		if arguments['on']:
-			val = '\x01'
+			val = b'\x01\x01'
 		else:
-			val = '\x00'
-		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
+			val = b'\x01\x00'
+		device.writeCharacteristic(STATE_HANDLE, sign(val, auth_key))
 	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
