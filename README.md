@@ -1,13 +1,13 @@
 # switchmate
 A python-based command line utility for controlling
-[Switchmate](https://github.com/scottjg/switchmate) switches.
+[Switchmate](http://www.myswitchmate.com/) switches.
 
 ## Usage
 
 	./switchmate.py scan
 	./switchmate.py status [<mac_address>]
-	./switchmate.py auth <mac_address>
-	./switchmate.py switch <mac_address> <auth_key> [on | off]
+	./switchmate.py <mac_address> auth 
+	./switchmate.py <mac_address> <auth_key> switch [on | off]
 
 	$ sudo ./switchmate.py scan
 	Scanning...
