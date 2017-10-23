@@ -8,7 +8,7 @@ Usage:
 	./switchmate.py scan
 	./switchmate.py status [<mac_address>]
 	./switchmate.py <mac_address> auth
-	./switchmate.py <mac_address> <auth_key> switch [on | off]
+	./switchmate.py <mac_address> switch [on | off] [<auth_key>]
 	./switchmate.py -h | --help
 """
 
@@ -18,18 +18,29 @@ import sys
 import ctypes
 
 from docopt import docopt
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM
+from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM, UUID
 from binascii import hexlify, unhexlify
 
-SWITCHMATE_SERVICE = '23d1bcea5f782315deef121223150000'
-NOTIFY_VALUE = struct.pack('<BB', 0x01, 0x00)
+# firmware < 2.99.15
+OLD_FIRMWARE_SERVICE = '23d1bcea5f782315deef121223150000'
+# firmware == 2.99.15 (or higher?)
+NEW_FIRMWARE_SERVICE = 'abd0f555eb40e7b2ac49ddeb83d32ba2'
 
-AUTH_NOTIFY_HANDLE = 0x0017
-AUTH_HANDLE = 0x0016
-AUTH_INIT_VALUE = struct.pack('<BBBBBB', 0x00, 0x00, 0x00, 0x00, 0x01, 0x00)
+SWITCHMATE_SERVICES = [
+	OLD_FIRMWARE_SERVICE,
+	NEW_FIRMWARE_SERVICE,
+]
 
-STATE_HANDLE = 0x000e
-STATE_NOTIFY_HANDLE = 0x000f
+NOTIFY_VALUE = '\x01'
+
+AUTH_NOTIFY_HANDLE = 0x17
+AUTH_HANDLE = 0x16
+AUTH_INIT_VALUE = '\x00\x00\x00\x00\x01\x00'
+
+STATE_HANDLE = 0x0e
+STATE_NOTIFY_HANDLE = 0x0f
+
+SERVICES_AD_TYPE = 0x07
 
 def c_mul(a, b):
 	'''
@@ -59,7 +70,7 @@ class NotificationDelegate(DefaultDelegate):
 		DefaultDelegate.__init__(self)
 
 	def handleNotification(self, handle, data):
-		print('')
+		print('', handle)
 		succeeded = True
 		if handle == AUTH_HANDLE:
 			print('Auth key is {}'.format(hexlify(data[3:]).upper()))
@@ -86,14 +97,22 @@ class ScanDelegate(DefaultDelegate):
 			return
 		self.seen.append(dev.addr)
 
-		AD_TYPE_UUID = 0x07
 		AD_TYPE_SERVICE_DATA = 0x16
-		if dev.getValueText(AD_TYPE_UUID) == SWITCHMATE_SERVICE:
+		service = dev.getValueText(SERVICES_AD_TYPE)
+		val = None
+		if service == OLD_FIRMWARE_SERVICE:
 			data = dev.getValueText(AD_TYPE_SERVICE_DATA)
 			# the bit at 0x0100 signifies if the switch is off or on
-			print(dev.addr + ' ' + ("off", "on")[(int(data, 16) >> 8) & 1])
+			val = (int(data, 16) >> 8) & 1
+		elif service == NEW_FIRMWARE_SERVICE:
+			peripheral = Peripheral(dev.addr, ADDR_TYPE_RANDOM)
+			val = ord(peripheral.readCharacteristic(0x2e)[0])
+
+		if val is not None:
+			print(dev.addr + ' ' + ("off", "on")[val])
 			if self.mac_address != None:
 				sys.exit()
+
 
 def status(mac_address):
 	print('Looking for switchmate status...')
@@ -103,7 +122,7 @@ def status(mac_address):
 
 	scanner.clear()
 	scanner.start()
-	scanner.process(20)
+	scanner.process(5)
 	scanner.stop()
 
 def scan():
@@ -113,12 +132,10 @@ def scan():
 	scanner = Scanner()
 	devices = scanner.scan(10.0)
 
-	SERVICES_AD_TYPE = 7
-
 	switchmates = []
 	for dev in devices:
 		for (adtype, desc, value) in dev.getScanData():
-			is_switchmate = adtype == SERVICES_AD_TYPE and value == SWITCHMATE_SERVICE
+			is_switchmate = adtype == SERVICES_AD_TYPE and value in SWITCHMATE_SERVICES
 			if is_switchmate and dev not in switchmates:
 				switchmates.append(dev)
 
@@ -128,6 +145,15 @@ def scan():
 			print(switchmate.addr)
 	else:
 		print('No Switchmate devices found');
+
+def debug_helper(device):
+	for char in device.getCharacteristics():
+		print(
+			char.uuid,
+			UUID(char.uuid).getCommonName(),
+			'{0:x}'.format(char.getHandle()),
+			char.propertiesToString()
+		)
 
 if __name__ == '__main__':
 	arguments = docopt(__doc__)
@@ -145,13 +171,19 @@ if __name__ == '__main__':
 	notifications = NotificationDelegate()
 	device.setDelegate(notifications)
 
-	if arguments['switch']:
+	if arguments['on']:
+		val = '\x01'
+	else:
+		val = '\x00'
+
+	if arguments['switch'] and arguments['<auth_key>'] is None:
+		print('switching new firmware')
+		device.writeCharacteristic(0x2a, NOTIFY_VALUE, True)
+		print(device.readCharacteristic(0x18))
+		device.writeCharacteristic(0x2e, val + '\x00')
+	elif arguments['switch']:
 		auth_key = unhexlify(arguments['<auth_key>'])
-		device.writeCharacteristic(STATE_NOTIFY_HANDLE, NOTIFY_VALUE, True)
-		if arguments['on']:
-			val = '\x01'
-		else:
-			val = '\x00'
+		device.writeCharacteristic(STATE_NOTIFY_HANDLE, '\x01', True)
 		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
 	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
