@@ -2,14 +2,17 @@
 
 """switchmate.py
 
-A python-based command line utility for controlling Switchmate switches
+A python-based command line utility for controlling Switchmate switches.
 
 Usage:
 	./switchmate.py scan
 	./switchmate.py status [<mac_address>]
 	./switchmate.py <mac_address> auth
-	./switchmate.py <mac_address> switch [on | off] [<auth_key>]
+	./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
 	./switchmate.py -h | --help
+
+Note: Switchmate switches with newer firmware do not require auth keys. Simply specify 'none', instead of the auth key,
+when invoking the switch command.
 """
 
 from __future__ import print_function
@@ -70,7 +73,7 @@ class NotificationDelegate(DefaultDelegate):
 		DefaultDelegate.__init__(self)
 
 	def handleNotification(self, handle, data):
-		print('', handle)
+		print('')
 		succeeded = True
 		if handle == AUTH_HANDLE:
 			print('Auth key is {}'.format(hexlify(data[3:]).upper()))
@@ -176,22 +179,19 @@ if __name__ == '__main__':
 	else:
 		val = '\x00'
 
-	if arguments['switch'] and arguments['<auth_key>'] is None:
-		print('switching new firmware')
-		device.writeCharacteristic(0x2a, NOTIFY_VALUE, True)
-		print(device.readCharacteristic(0x18))
-		device.writeCharacteristic(0x2e, val + '\x00')
+	if arguments['switch'] and arguments['<auth_key>'] == 'none':
+		device.writeCharacteristic(0x2e, val, True)
+		print('Switched!')
 	elif arguments['switch']:
 		auth_key = unhexlify(arguments['<auth_key>'])
 		device.writeCharacteristic(STATE_NOTIFY_HANDLE, '\x01', True)
 		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
+		print('Waiting for response', end='')
+		while True:
+			device.waitForNotifications(1.0)
+			print('.', end='')
+			sys.stdout.flush()
 	else:
 		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
 		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
 		print('Press button on Switchmate to get auth key')
-
-	print('Waiting for response', end='')
-	while True:
-		device.waitForNotifications(1.0)
-		print('.', end='')
-		sys.stdout.flush()
