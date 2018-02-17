@@ -7,7 +7,7 @@ A python-based command line utility for controlling Switchmate switches.
 Usage:
 	./switchmate.py scan
 	./switchmate.py status [<mac_address>]
-	./switchmate.py debug [<mac_address>]
+	./switchmate.py <mac_address> debug
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
 	./switchmate.py -h | --help
