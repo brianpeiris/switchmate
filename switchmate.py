@@ -7,6 +7,7 @@ A python-based command line utility for controlling Switchmate switches.
 Usage:
 	./switchmate.py scan
 	./switchmate.py status [<mac_address>]
+	./switchmate.py debug [<mac_address>]
 	./switchmate.py <mac_address> auth
 	./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
 	./switchmate.py -h | --help
@@ -23,6 +24,7 @@ import ctypes
 from docopt import docopt
 from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM, UUID
 from binascii import hexlify, unhexlify
+from tabulate import tabulate
 
 # firmware < 2.99.15
 OLD_FIRMWARE_SERVICE = '23d1bcea5f782315deef121223150000'
@@ -150,13 +152,25 @@ def scan():
 		print('No Switchmate devices found');
 
 def debug_helper(device):
+	output = [['uuid', 'common name', 'handle', 'properties', 'value']]
 	for char in device.getCharacteristics():
-		print(
-			char.uuid,
+		if char.supportsRead():
+			val = char.read()
+			binary = False
+			for c in val:
+				if ord(c) < 32 or ord(c) > 126:
+					binary = True
+			if binary:
+				val = hexlify(val)
+		output.append([
+			str(char.uuid),
 			UUID(char.uuid).getCommonName(),
 			'{0:x}'.format(char.getHandle()),
-			char.propertiesToString()
-		)
+			char.propertiesToString(),
+			str(val)
+		])
+	print(tabulate(output, headers='firstrow'))
+
 
 if __name__ == '__main__':
 	arguments = docopt(__doc__)
@@ -170,6 +184,10 @@ if __name__ == '__main__':
 		sys.exit()
 
 	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
+
+	if arguments['debug']:
+		debug_helper(device)
+		sys.exit()
 
 	notifications = NotificationDelegate()
 	device.setDelegate(notifications)
