@@ -200,6 +200,7 @@ if __name__ == '__main__':
 
 	if arguments['debug']:
 		try:
+			print('Retrieving debug info...')
 			debug_helper(device)
 		except Exception as ex:
 			print('ERROR: Could not retrieve debug info. {}'.format(ex.message))
