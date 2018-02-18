@@ -1,4 +1,5 @@
 # switchmate
+
 A python-based command line utility for controlling
 [Switchmate](http://www.myswitchmate.com/) switches.
 
@@ -29,22 +30,22 @@ A python-based command line utility for controlling
 
 	--- for newer switchmate devices/firmwares, an auth key is not necessary ---
 
-	$ ./switchmate.py ee:0d:eb:e4:3f:0d none switch on
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d none switch on
 	Waiting for response
 	Switched!
 
 	--- for older switchmate devices/firmwares, an auth key is necessary ---
 
-	$ ./switchmate.py ee:0d:eb:e4:3f:0d auth
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d auth
 	Press button on Switchmate to get auth key
 	Waiting for response...
 	Auth key is 4723210F
 
-	$ ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch on
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch on
 	Waiting for response
 	Switched!
 
-	$ ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch off
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch off
 	Waiting for response
 	Switched!
 

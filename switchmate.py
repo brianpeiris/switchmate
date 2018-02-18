@@ -12,7 +12,7 @@ Usage:
 	./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
 	./switchmate.py -h | --help
 
-Note: Switchmate switches with newer firmware do not require auth keys. Simply specify 'none', instead of the auth key,
+Note: Newer switchmate devices/firmwares do not require auth keys. Simply specify 'none', instead of the auth key,
 when invoking the switch command.
 """
 
@@ -22,9 +22,10 @@ import sys
 import ctypes
 
 from docopt import docopt
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM, UUID
+from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM, UUID, BTLEException
 from binascii import hexlify, unhexlify
 from tabulate import tabulate
+from time import sleep
 
 # firmware < 2.99.15
 OLD_FIRMWARE_SERVICE = '23d1bcea5f782315deef121223150000'
@@ -44,6 +45,7 @@ AUTH_INIT_VALUE = '\x00\x00\x00\x00\x01\x00'
 
 STATE_HANDLE = 0x0e
 STATE_NOTIFY_HANDLE = 0x0f
+NEW_STATE_HANDLE = 0x2e
 
 SERVICES_AD_TYPE = 0x07
 
@@ -110,8 +112,11 @@ class ScanDelegate(DefaultDelegate):
 			# the bit at 0x0100 signifies if the switch is off or on
 			val = (int(data, 16) >> 8) & 1
 		elif service == NEW_FIRMWARE_SERVICE:
-			peripheral = Peripheral(dev.addr, ADDR_TYPE_RANDOM)
-			val = ord(peripheral.readCharacteristic(0x2e)[0])
+			try:
+				peripheral = Peripheral(dev.addr, ADDR_TYPE_RANDOM)
+				val = ord(peripheral.readCharacteristic(NEW_STATE_HANDLE)[0])
+			except Exception as ex:
+				print('WARNING: Could not read status of {}. {}'.format(dev.addr, ex.message))
 
 		if val is not None:
 			print(dev.addr + ' ' + ("off", "on")[val])
@@ -179,37 +184,56 @@ if __name__ == '__main__':
 		scan()
 		sys.exit()
 
+	mac_address = arguments['<mac_address>']
 	if arguments['status']:
-		status(arguments['<mac_address>'])
+		status(mac_address)
 		sys.exit()
 
-	device = Peripheral(arguments['<mac_address>'], ADDR_TYPE_RANDOM)
+	try:
+		device = Peripheral(mac_address, ADDR_TYPE_RANDOM)
+	except BTLEException as ex:
+		if 'failed to connect' in ex.message.lower():
+			print('ERROR: Failed to connect to device.')
+		else:
+			print('ERROR: ' + ex.message)
+		sys.exit(1)
 
 	if arguments['debug']:
-		debug_helper(device)
-		sys.exit()
+		try:
+			debug_helper(device)
+		except Exception as ex:
+			print('ERROR: Could not retrieve debug info. {}'.format(ex.message))
+			sys.exit(1)
+		else:
+			sys.exit()
 
-	notifications = NotificationDelegate()
-	device.setDelegate(notifications)
+	device.setDelegate(NotificationDelegate())
 
 	if arguments['on']:
 		val = '\x01'
 	else:
 		val = '\x00'
 
-	if arguments['switch'] and arguments['<auth_key>'] == 'none':
-		device.writeCharacteristic(0x2e, val, True)
-		print('Switched!')
-	elif arguments['switch']:
-		auth_key = unhexlify(arguments['<auth_key>'])
-		device.writeCharacteristic(STATE_NOTIFY_HANDLE, '\x01', True)
-		device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
-		print('Waiting for response', end='')
-		while True:
-			device.waitForNotifications(1.0)
-			print('.', end='')
-			sys.stdout.flush()
-	else:
-		device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
-		device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
-		print('Press button on Switchmate to get auth key')
+	try:
+		if arguments['switch'] and arguments['<auth_key>'] == 'none':
+			device.writeCharacteristic(NEW_STATE_HANDLE, val, True)
+			print('Switched!')
+		elif arguments['switch']:
+			auth_key = unhexlify(arguments['<auth_key>'])
+			device.writeCharacteristic(STATE_NOTIFY_HANDLE, '\x01', True)
+			device.writeCharacteristic(STATE_HANDLE, sign('\x01' + val, auth_key))
+			print('Waiting for response', end='')
+			while True:
+				device.waitForNotifications(1.0)
+				print('.', end='')
+				sys.stdout.flush()
+		else:
+			device.writeCharacteristic(AUTH_NOTIFY_HANDLE, NOTIFY_VALUE, True)
+			device.writeCharacteristic(AUTH_HANDLE, AUTH_INIT_VALUE, True)
+			print('Press button on Switchmate to get auth key')
+	except BTLEException as ex:
+		if 'disconnected' in ex.message.lower():
+			print('ERROR: Device disconnected.')
+		else:
+			print('ERROR: ' + ex.message);
+		sys.exit(1)
