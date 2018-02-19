@@ -12,8 +12,9 @@ Usage:
     ./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
     ./switchmate.py -h | --help
 
-Note: Newer switchmate devices/firmwares do not require auth keys. Simply specify 'none', instead of the auth key,
-when invoking the switch command.
+Note: Newer switchmate devices/firmwares do not require auth keys.
+Simply specify 'none', instead of the auth key, when invoking the
+switch command.
 """
 
 from __future__ import print_function
@@ -22,10 +23,18 @@ import sys
 import ctypes
 
 from docopt import docopt
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral, ADDR_TYPE_RANDOM, UUID, BTLEException
+from bluepy.btle import (Scanner, DefaultDelegate, Peripheral,
+    ADDR_TYPE_RANDOM, UUID, BTLEException)
 from binascii import hexlify, unhexlify
 from tabulate import tabulate
 from time import sleep
+
+def noop(x):
+    return x
+
+if sys.version_info >= (3,):
+    long = int
+    ord = noop
 
 # firmware < 2.99.15
 OLD_FIRMWARE_SERVICE = '23d1bcea5f782315deef121223150000'
@@ -130,10 +139,13 @@ def status(mac_address):
 
     scanner = Scanner().withDelegate(ScanDelegate(mac_address))
 
-    scanner.clear()
-    scanner.start()
-    scanner.process(5)
-    scanner.stop()
+    try:
+        scanner.clear()
+        scanner.start()
+        scanner.process(5)
+        scanner.stop()
+    except BTLEException as ex:
+        print('WARNING: Scanning interrupted. {}'.format(ex.message))
 
 def scan():
     print('Scanning...')
