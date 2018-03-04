@@ -193,7 +193,12 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
 
     if arguments['scan']:
-        scan()
+        try: 
+            scan()
+        except BTLEException as ex:
+            print('ERROR: Could not complete scan. Try running switchmate with sudo. {}'.format(ex.message))
+        except OSError as ex:
+            print('ERROR: Could not complete scan. Try compiling the bluepy helper. {}'.format(ex))
         sys.exit()
 
     mac_address = arguments['<mac_address>']
@@ -223,9 +228,9 @@ if __name__ == '__main__':
     device.setDelegate(NotificationDelegate())
 
     if arguments['on']:
-        val = '\x01'
+        val = b'\x01'
     else:
-        val = '\x00'
+        val = b'\x00'
 
     try:
         if arguments['switch'] and arguments['<auth_key>'] == 'none':
