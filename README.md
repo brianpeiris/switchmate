@@ -1,15 +1,17 @@
 # switchmate
 
 A python-based command line utility for controlling
-[Switchmate](http://www.myswitchmate.com/) switches.
+[Switchmate](https://www.mysimplysmarthome.com/products/switchmate-switches/) switches.
 
 ## Usage
 
-	./switchmate.py scan
-	./switchmate.py status [<mac_address>]
-	./switchmate.py <mac_address> debug
-	./switchmate.py <mac_address> auth
-	./switchmate.py <mac_address> (<auth_key> | none) switch [on | off]
+    ./switchmate.py scan [options]
+    ./switchmate.py status [options]
+    ./switchmate.py <mac_address> status [options]
+    ./switchmate.py <mac_address> switch (on | off)
+    ./switchmate.py <mac_address> toggle
+    ./switchmate.py <mac_address> battery-level
+    ./switchmate.py <mac_address> debug
 
 	$ sudo ./switchmate.py scan
 	Scanning...
@@ -18,40 +20,21 @@ A python-based command line utility for controlling
 	e4:ee:fc:66:48:aa
 	c9:5e:b2:60:37:01
 
-	$ sudo ./switchmate.py status
+	$ sudo ./switchmate.py status --timeout=10
 	Looking for switchmate status...
 	ee:0d:eb:e4:3f:0d off
 	e4:ee:fc:66:48:aa off
 	c9:5e:b2:60:37:01 on
 
-	$ sudo ./switchmate.py status ee:0d:eb:e4:3f:0d
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d status
 	Looking for switchmate status...
 	ee:0d:eb:e4:3f:0d off
 
-	--- for newer switchmate devices/firmwares, an auth key is not necessary ---
-
-	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d none switch on
-	Waiting for response
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d switch on
 	Switched!
 
-	--- for older switchmate devices/firmwares, an auth key is necessary ---
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d toggle
+	Switched on!
 
-	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d auth
-	Press button on Switchmate to get auth key
-	Waiting for response...
-	Auth key is 4723210F
-
-	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch on
-	Waiting for response
-	Switched!
-
-	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d 4723210F switch off
-	Waiting for response
-	Switched!
-
-**Note:** Newer Switchmate devices/firmwares do not require authentication. Use "none" instead of an auth key to switch
-your device on and off.
-
-**Note:** If your device requires an auth key, you cannot use this script and the Switchmate app simultaneously.
-
-Based on code from [scottjg/switchmate](https://github.com/scottjg/switchmate).
+	$ sudo ./switchmate.py ee:0d:eb:e4:3f:0d battery-level
+	Battery level: 45%
