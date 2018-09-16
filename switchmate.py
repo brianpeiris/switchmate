@@ -59,7 +59,7 @@ else:
     get_byte = ord
 
 # firmware == 2.99.15 (or higher?)
-SWITCHMATE_SERVICE = 'abd0f555eb40e7b2ac49ddeb83d32ba2'
+SWITCHMATE_SERVICE = 'a22bd383-ebdd-49ac-b2e7-40eb55f5d0ab'
 
 ORIGINAL_STATE_HANDLE = 0x2e
 BRIGHT_STATE_HANDLE = 0x30
