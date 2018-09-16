@@ -3,6 +3,10 @@
 A python-based command line utility for controlling
 [Switchmate](https://www.mysimplysmarthome.com/products/switchmate-switches/) switches.
 
+## Installation
+
+	$ pip install -r requirements.txt
+
 ## Usage
 
     ./switchmate.py scan [options]
