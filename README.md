@@ -20,7 +20,7 @@ A python-based command line utility for controlling
 	e4:ee:fc:66:48:aa
 	c9:5e:b2:60:37:01
 
-	$ sudo ./switchmate.py status --timeout=10
+	$ sudo ./switchmate.py status --timeout=2
 	Looking for switchmate status...
 	ee:0d:eb:e4:3f:0d off
 	e4:ee:fc:66:48:aa off
